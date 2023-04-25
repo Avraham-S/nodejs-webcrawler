@@ -1,6 +1,4 @@
 import axios from "axios";
-let totalWordCount = 0;
-const findWord = process.argv[2];
 
 const fetchHtml = async (url: string) => {
   try {
@@ -36,24 +34,24 @@ const getPageLinks = (html: string): string[] | undefined => {
 };
 
 const getTotalWordCountFromPages = (findWord: string, startPage: string) => {
-  (totalWordCount = 0),
-    fetchHtml(startPage)
-      .then((html) => {
-        getWordCount(html, findWord);
-        return getPageLinks(html);
-      })
-      .then((links: string[] | undefined) => {
-        const promises = links?.map((link: string) => {
-          return fetchHtml(link);
-        });
-
-        return Promise.all(promises as readonly unknown[]);
-      })
-      .then((pages) => {
-        pages.forEach((page) => {
-          totalWordCount += getWordCount(page as string, findWord) || 0;
-        });
-        console.log(`Total count of ${findWord}: `, totalWordCount);
+  let totalWordCount = 0;
+  fetchHtml(startPage)
+    .then((html) => {
+      getWordCount(html, findWord);
+      return getPageLinks(html);
+    })
+    .then((links: string[] | undefined) => {
+      const promises = links?.map((link: string) => {
+        return fetchHtml(link);
       });
+
+      return Promise.all(promises as readonly unknown[]);
+    })
+    .then((pages) => {
+      pages.forEach((page) => {
+        totalWordCount += getWordCount(page as string, findWord) || 0;
+      });
+      console.log(`Total count of ${findWord}: `, totalWordCount);
+    });
 };
 getTotalWordCountFromPages(process.argv[2], process.argv[3]);
