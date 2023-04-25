@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "node build/app",
+    "prestart": "tsc"
+  },
   "devDependencies": {
     "@types/axios": "^0.14.0",
     "@types/node": "^18.16.0",

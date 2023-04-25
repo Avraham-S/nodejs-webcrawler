@@ -13,31 +13,59 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
+let totalWordCount = 0;
+const findWord = process.argv[2];
 const fetchHtml = (url) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { data } = yield axios_1.default.get(url);
         return data;
     }
     catch (error) {
-        console.error(error);
+        console.error("Failed to get page: ", url);
         return error;
     }
 });
 const getWordCount = (html, word) => {
+    if (typeof html !== "string")
+        return null;
     let wordCount = 0;
     const split = html
-        // .split(/<.*?>/g)
-        .split(/>.*?</g)
+        .split(/<.*?>/g)
         .join(" ")
         .split(" ")
-        .filter((v) => v);
-    // .filter((v) => v.toLowerCase() === "typescript");
+        .filter((v) => v)
+        .filter((v) => v.toLowerCase() === word);
     split.forEach((currentWord) => {
         if (currentWord.toLowerCase() === word.toLowerCase())
             wordCount++;
     });
-    console.log(split);
-    console.log(wordCount);
+    return wordCount;
 };
-fetchHtml("https://www.digitalocean.com/community/tutorials/typescript-new-project").then((html) => getWordCount(html, "typescript"));
+const getPageLinks = (html) => {
+    var _a;
+    const links = (_a = html
+        .match(/href=".*?"/gi)) === null || _a === void 0 ? void 0 : _a.map((href) => href.replace('href="', "").replace(/.$/, ""));
+    return links;
+};
+const getTotalWordCountFromPages = (findWord, startPage) => {
+    (totalWordCount = 0),
+        fetchHtml(startPage)
+            .then((html) => {
+            getWordCount(html, findWord);
+            return getPageLinks(html);
+        })
+            .then((links) => {
+            const promises = links === null || links === void 0 ? void 0 : links.map((link) => {
+                return fetchHtml(link);
+            });
+            return Promise.all(promises);
+        })
+            .then((pages) => {
+            pages.forEach((page) => {
+                totalWordCount += getWordCount(page, findWord) || 0;
+            });
+            console.log(`Total count of ${findWord}: `, totalWordCount);
+        });
+};
+getTotalWordCountFromPages(process.argv[2], process.argv[3]);
 //# sourceMappingURL=app.js.map

@@ -1,23 +1,26 @@
 import axios from "axios";
+let totalWordCount = 0;
+const findWord = process.argv[2];
 
 const fetchHtml = async (url: string) => {
   try {
     const { data } = await axios.get(url);
     return data;
   } catch (error) {
-    console.error(error);
+    console.error("Failed to get page: ", url);
     return error;
   }
 };
 
-const getWordCount = (html: string, word: string) => {
+const getWordCount = (html: string, word: string): number | null => {
+  if (typeof html !== "string") return null;
   let wordCount = 0;
   const split: Array<string> = html
     .split(/<.*?>/g)
     .join(" ")
     .split(" ")
     .filter((v) => v)
-    .filter((v) => v.toLowerCase() === "typescript");
+    .filter((v) => v.toLowerCase() === word);
 
   split.forEach((currentWord: string) => {
     if (currentWord.toLowerCase() === word.toLowerCase()) wordCount++;
@@ -25,6 +28,32 @@ const getWordCount = (html: string, word: string) => {
   return wordCount;
 };
 
-fetchHtml(
-  "https://www.digitalocean.com/community/tutorials/typescript-new-project"
-).then((html) => getWordCount(html, "typescript"));
+const getPageLinks = (html: string): string[] | undefined => {
+  const links: Array<string> | null | undefined = html
+    .match(/href=".*?"/gi)
+    ?.map((href: string) => href.replace('href="', "").replace(/.$/, ""));
+  return links;
+};
+
+const getTotalWordCountFromPages = (findWord: string, startPage: string) => {
+  (totalWordCount = 0),
+    fetchHtml(startPage)
+      .then((html) => {
+        getWordCount(html, findWord);
+        return getPageLinks(html);
+      })
+      .then((links: string[] | undefined) => {
+        const promises = links?.map((link: string) => {
+          return fetchHtml(link);
+        });
+
+        return Promise.all(promises as readonly unknown[]);
+      })
+      .then((pages) => {
+        pages.forEach((page) => {
+          totalWordCount += getWordCount(page as string, findWord) || 0;
+        });
+        console.log(`Total count of ${findWord}: `, totalWordCount);
+      });
+};
+getTotalWordCountFromPages(process.argv[2], process.argv[3]);
