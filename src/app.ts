@@ -37,7 +37,7 @@ const getTotalWordCountFromPages = (findWord: string, startPage: string) => {
   let totalWordCount = 0;
   fetchHtml(startPage)
     .then((html) => {
-      getWordCount(html, findWord);
+      totalWordCount += getWordCount(html, findWord) || 0;
       return getPageLinks(html);
     })
     .then((links: string[] | undefined) => {

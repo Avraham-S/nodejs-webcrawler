@@ -13,8 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
-let totalWordCount = 0;
-const findWord = process.argv[2];
 const fetchHtml = (url) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { data } = yield axios_1.default.get(url);
@@ -48,24 +46,24 @@ const getPageLinks = (html) => {
     return links;
 };
 const getTotalWordCountFromPages = (findWord, startPage) => {
-    (totalWordCount = 0),
-        fetchHtml(startPage)
-            .then((html) => {
-            getWordCount(html, findWord);
-            return getPageLinks(html);
-        })
-            .then((links) => {
-            const promises = links === null || links === void 0 ? void 0 : links.map((link) => {
-                return fetchHtml(link);
-            });
-            return Promise.all(promises);
-        })
-            .then((pages) => {
-            pages.forEach((page) => {
-                totalWordCount += getWordCount(page, findWord) || 0;
-            });
-            console.log(`Total count of ${findWord}: `, totalWordCount);
+    let totalWordCount = 0;
+    fetchHtml(startPage)
+        .then((html) => {
+        totalWordCount += getWordCount(html, findWord) || 0;
+        return getPageLinks(html);
+    })
+        .then((links) => {
+        const promises = links === null || links === void 0 ? void 0 : links.map((link) => {
+            return fetchHtml(link);
         });
+        return Promise.all(promises);
+    })
+        .then((pages) => {
+        pages.forEach((page) => {
+            totalWordCount += getWordCount(page, findWord) || 0;
+        });
+        console.log(`Total count of ${findWord}: `, totalWordCount);
+    });
 };
 getTotalWordCountFromPages(process.argv[2], process.argv[3]);
 //# sourceMappingURL=app.js.map
